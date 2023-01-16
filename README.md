@@ -42,7 +42,7 @@ export class User {
 
 ### One To One
 
-当存在一张 `profile` 表，其存在一个字段 `userId` 对应 `user` 表的 `id` 字段，并且数据间为一对一映射关系，即可用注解 `OneToOne` 与 `JoinColumn` 来进行表示。此时 **Profile Entity** 的内容如下所示（路径为 `src/profile/profile.entity.ts`）：
+当存在一张 `profile` 表，其存在一个字段 `userId` 对应 `user` 表的 `id` 字段，并且数据间为一对一映射关系，即可用注解 `OneToOne` 与 `JoinColumn` 来进行实现。此时 **Profile Entity** 的内容如下所示（路径为 `src/profile/profile.entity.ts`）：
 
 ```typescript
 import { User } from 'src/user/user.entity';
@@ -84,7 +84,7 @@ export class Profile {
 
 ### Many-To-One / One-To-Many
 
-当存在一张 `log` 表，其存在一个字段 `userId` 对应 `user` 表的 `id` 字段，并且 `user` 表中的数据可以映射 `log`表中多个数据时，可以通过注解 `ManyToOne`，`OneToMany` 来进行表示。
+当存在一张 `log` 表，其存在一个字段 `userId` 对应 `user` 表的 `id` 字段，并且 `user` 表中的数据可以映射 `log`表中多个数据时，可以通过注解 `ManyToOne`，`OneToMany` 来进行实现。
 
 此时 **Log Entity** 的内容如下（路径为 `src/log/log.entity.ts`）：
 
@@ -158,4 +158,57 @@ export class User {
 | userId      | int          | FOREIGN KEY                |
 +-------------+--------------+----------------------------+
 ```
+
+### Many To Many
+
+当存在一张表 `role`，其当中的数据与表 `user` 的数据为多对多的关系，此时可以通过注解 `ManyToMany` 和 `JoinTable` 实现。
+
+此时 **Role Entity** 的内容如下（路径为 `src/role/role.entity.ts`）：
+
+```typescript
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
+import { User } from 'src/user/user.entity';
+@Entity()
+export class Role {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  name: string;
+
+  @ManyToMany(() => User)
+  @JoinTable({ name: 'user_role' })
+  users: User[];
+}
+```
+
+此时，会自动生成一张 `user_role` 表（表名可通过在注解 `JoinTable` 中传入 `name` 进行修改），用于储存  `role` 与 `user`  的关系。
+
+此时表之前的关系为：
+
+```
++-------------+--------------+----------------------------+
+|                          user                           |
++-------------+--------------+----------------------------+
+| id          | int          | PRIMARY KEY AUTO_INCREMENT |
+| username    | varchar(255) |                            |
+| password    | varchar(255) |                            |
++-------------+--------------+----------------------------+
+
++-------------+--------------+----------------------------+
+|                        user_role                        |
++-------------+--------------+----------------------------+
+| roleId      | varchar(255) | PRIMARY KEY AUTO_INCREMENT |
+| userId      | varchar(255) | PRIMARY KEY AUTO_INCREMENT |
++-------------+--------------+----------------------------+
+
++-------------+--------------+----------------------------+
+|                          role                           |
++-------------+--------------+----------------------------+
+| id          | int          | PRIMARY KEY AUTO_INCREMENT |
+| name        | varchar(255) |                            |
++-------------+--------------+----------------------------+
+```
+
+> `@ManyToMany` 与`@JoinTable` 只需在存在多对多关系的两张表之间任意一张进行注解即可。
 
