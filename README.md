@@ -1,73 +1,86 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+本项目用于记录 **NestJS** 与 **TypeORM** 对接过程中的一系列配置及说明。
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Entity
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+**Entity** 类对应数据库中的每张表，以 `src/user/user.entity.ts` 为例：
 
-## Description
+```typescript
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+@Entity()
+export class User {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-## Installation
+  @Column()
+  username: string;
 
-```bash
-$ pnpm install
+  @Column()
+  password: string;
+}
 ```
 
-## Running the app
+通过注解 `@Entity()` 定义 **Entity** 类，注解 `@Column()`，`@PrimaryGeneratedColumn()` 等定义需映射到数据库的字段。
 
-```bash
-# development
-$ pnpm run start
+ 每个 **Entity** 类需要在 **TypeOrmModule** 的 `entities` 中引入，才可生效。
 
-# watch mode
-$ pnpm run start:dev
+当项目启动，并且 **TypeOrmModule** 的 `synchronize` 为 `true` 时，会在数据库中，自动生成 `user` 表，其结构如下：
 
-# production mode
-$ pnpm run start:prod
+```
++-------------+--------------+----------------------------+
+|                          user                           |
++-------------+--------------+----------------------------+
+| id          | int          | PRIMARY KEY AUTO_INCREMENT |
+| username    | varchar(255) |                            |
+| password    | varchar(255) |                            |
++-------------+--------------+----------------------------+
 ```
 
-## Test
+> [What is Entity?](https://typeorm.io/entities#what-is-entity)
 
-```bash
-# unit tests
-$ pnpm run test
+## Entity 间对应关系
 
-# e2e tests
-$ pnpm run test:e2e
+### One To One
 
-# test coverage
-$ pnpm run test:cov
+当存在一张 `profile` 表，其存在一个字段 `userId` 对应 `user` 表的 `id` 字段，即可用注解 `OneToOne` 与 `JoinColumn` 来进行映射。此时 **Profile Entity** 的内容如下所示（路径为 `src/profile/profile.entity.ts`）：
+
+```typescript
+import { User } from 'src/user/user.entity';
+import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+
+@Entity()
+export class Profile {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  gender: number;
+
+  @Column()
+  photo: string;
+
+  @Column()
+  address: string;
+
+  @OneToOne(() => User)
+  @JoinColumn()
+  user: User;
+}
 ```
 
-## Support
+此时 `profile` 表的结构为：
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```
++-------------+--------------+----------------------------+
+|                       profile                           |
++-------------+--------------+----------------------------+
+| id          | int          | PRIMARY KEY AUTO_INCREMENT |
+| gender      | varchar(255) |                            |
+| photo       | varchar(255) |                            |
+| address     | varchar(255) |                            |
+| userId      | int          | FOREIGN KEY                |
++-------------+--------------+----------------------------+
+```
 
-## Stay in touch
+### Many-To-One / One-To-Many
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
