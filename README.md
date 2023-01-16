@@ -42,7 +42,7 @@ export class User {
 
 ### One To One
 
-当存在一张 `profile` 表，其存在一个字段 `userId` 对应 `user` 表的 `id` 字段，即可用注解 `OneToOne` 与 `JoinColumn` 来进行映射。此时 **Profile Entity** 的内容如下所示（路径为 `src/profile/profile.entity.ts`）：
+当存在一张 `profile` 表，其存在一个字段 `userId` 对应 `user` 表的 `id` 字段，并且数据间为一对一映射关系，即可用注解 `OneToOne` 与 `JoinColumn` 来进行表示。此时 **Profile Entity** 的内容如下所示（路径为 `src/profile/profile.entity.ts`）：
 
 ```typescript
 import { User } from 'src/user/user.entity';
@@ -83,4 +83,79 @@ export class Profile {
 ```
 
 ### Many-To-One / One-To-Many
+
+当存在一张 `log` 表，其存在一个字段 `userId` 对应 `user` 表的 `id` 字段，并且 `user` 表中的数据可以映射 `log`表中多个数据时，可以通过注解 `ManyToOne`，`OneToMany` 来进行表示。
+
+此时 **Log Entity** 的内容如下（路径为 `src/log/log.entity.ts`）：
+
+```typescript
+import { User } from 'src/user/user.entity';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
+@Entity()
+export class Log {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  path: string;
+
+  @Column()
+  methods: string;
+
+  @Column()
+  data: string;
+
+  @Column()
+  result: string;
+
+  @ManyToOne(() => User, (user) => user.logs)
+  user: User;
+}
+```
+
+修改 `User Entity` 的内容：
+
+```typescript
+import { Log } from 'src/log/log.entity';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+
+@Entity()
+export class User {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  username: string;
+
+  @Column()
+  password: string;
+
+  @OneToMany(() => Log, (log) => log.user)
+  logs: Log[];
+}
+```
+
+此时表结构为：
+
+```
++-------------+--------------+----------------------------+
+|                          user                           |
++-------------+--------------+----------------------------+
+| id          | int          | PRIMARY KEY AUTO_INCREMENT |
+| username    | varchar(255) |                            |
+| password    | varchar(255) |                            |
++-------------+--------------+----------------------------+
+
++-------------+--------------+----------------------------+
+|                           log                           |
++-------------+--------------+----------------------------+
+| id          | int          | PRIMARY KEY AUTO_INCREMENT |
+| path        | varchar(255) |                            |
+| methods     | varchar(255) |                            |
+| data        | varchar(255) |                            |
+| result      | varchar(255) |                            |
+| userId      | int          | FOREIGN KEY                |
++-------------+--------------+----------------------------+
+```
 
