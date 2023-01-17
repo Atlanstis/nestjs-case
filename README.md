@@ -82,6 +82,8 @@ export class Profile {
 +-------------+--------------+----------------------------+
 ```
 
+> [One-to-one relations](https://typeorm.io/one-to-one-relations)
+
 ### Many-To-One / One-To-Many
 
 当存在一张 `log` 表，其存在一个字段 `userId` 对应 `user` 表的 `id` 字段，并且 `user` 表中的数据可以映射 `log`表中多个数据时，可以通过注解 `ManyToOne`，`OneToMany` 来进行实现。
@@ -159,6 +161,8 @@ export class User {
 +-------------+--------------+----------------------------+
 ```
 
+> [Many-to-one / one-to-many relations](https://typeorm.io/many-to-one-one-to-many-relations)
+
 ### Many To Many
 
 当存在一张表 `role`，其当中的数据与表 `user` 的数据为多对多的关系，此时可以通过注解 `ManyToMany` 和 `JoinTable` 实现。
@@ -212,3 +216,82 @@ export class Role {
 
 > `@ManyToMany` 与`@JoinTable` 只需在存在多对多关系的两张表之间任意一张进行注解即可。
 
+> [Many-to-many relations](https://typeorm.io/many-to-many-relations)
+
+## 单个 Entity 的 CURD
+
+以下以 **User Entity** 为例，实现 `user` 表的增删改查：
+
+新增 `src/user/user.module.ts`：
+
+```typescript
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserService } from './user.service';
+import { UserController } from './user.controller';
+import { User } from './user.entity';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([User])],
+  providers: [UserService],
+  controllers: [UserController],
+})
+export class UserModule {}
+```
+
+`TypeOrmModule.forFeature()`  方法，传入需要操作的 **Entity**。
+
+接着在 `src/user/user.service.ts` 构造器中，通过 `@InjectRepository` 注解注入相应储存库。
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from './user.entity';
+
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+  ) {}
+
+  findAll(): Promise<User[]> {
+    return this.usersRepository.find();
+  }
+
+  findOne(id: number): Promise<User> {
+    return this.usersRepository.findOneBy({ id });
+  }
+
+  async add(user: User): Promise<User> {
+    const userTemp = await this.usersRepository.create(user);
+    return this.usersRepository.save(userTemp);
+  }
+
+  update(id: number, user: Partial<User>) {
+    return this.usersRepository.update(id, user);
+  }
+
+  async delete(id: number): Promise<void> {
+    await this.usersRepository.delete(id);
+  }
+}
+```
+
+此时在 `UserService` 类的方法中，即可通过操作储存库实例进行 **CURD** 操作。
+
+> 记得将 `UserModule` 在 `AppModule` 中导入。
+
+### CURD 方法
+
+常见的 **CURD** 方法如下：
+
+- **find**：通过条件查找数据，配置可参考 [Find Options](https://typeorm.io/find-options)
+- **findBy**：通过条件查找数据，配置可参考 [Find Options](https://typeorm.io/find-options) 的 `where` 字段。
+- **create**：根据参数创建一个对应的实例。
+- **update**：从数据库更新数据。
+- **delete**：从数据库删除数据。
+- save：将数据保存到数据库。
+
+> [Repository APIs](https://typeorm.io/repository-api)
