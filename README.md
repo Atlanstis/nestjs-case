@@ -70,3 +70,8 @@ export class UserController {
 
 > [Logger](https://docs.nestjs.com/techniques/logger)
 
+### 第三方日志模块
+
+#### [pino](https://getpino.io/#/)
+
+#### [winston](https://github.com/winstonjs/winston)
