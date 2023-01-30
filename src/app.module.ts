@@ -7,7 +7,8 @@ import { User } from './user/user.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
-
+import { LoggerModule } from 'nestjs-pino';
+import { join } from 'path';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -19,6 +20,27 @@ import { UserModule } from './user/user.module';
       database: 'nestjs',
       entities: [User, Profile, Log, Role],
       synchronize: true,
+    }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV === 'development'
+            ? {
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                },
+              }
+            : {
+                target: 'pino-roll',
+                options: {
+                  file: join('logs', 'log'),
+                  frequency: 'daily',
+                  size: '10m',
+                  mkdir: true,
+                },
+              },
+      },
     }),
     UserModule,
   ],

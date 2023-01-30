@@ -1,77 +1,95 @@
 本文档用于记录 **NestJS** 的日志方案。
 
-### 官方日志模块
+## [Pino](https://getpino.io/#/)
 
-在 `main.ts` 中，创建实例时，可以通过配置 `logger` 的参数，控制 **NestJS** 的日志打印，日志打印在控制台中，可用于开发中的调试。
+**Pino** 与 **NestJS** 的安装配置，可参考：[Pino with Nest](https://getpino.io/#/docs/web?id=pino-with-nest)。
+
+具体步骤如下，
+
+在 **AppModule** 类中，全局引入 **pino** 的 **LoggerModule**：
 
 ```typescript
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { LoggerModule } from 'nestjs-pino'
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn'],
-  });
-  await app.listen(3000);
-}
-bootstrap();
+@Module({
+  controllers: [AppController],
+  imports: [LoggerModule.forRoot()]
+})
+class MyModule {}
 ```
 
-`logger` 可为以下内容，默认为 `true`，开启打印：
-
-- false：关闭日志打印；
-- ['log', 'error', 'warn', 'debug', 'verbose']：打印不同等级的日志。
-
-#### Logger 类
-
-官方提供的 **@nestjs/common** 包中，提供了一个 **Logger** 类，可以通过这个类在控制台进行相关日志的打印。
-
-**Logger** 类实例化时，可以传递一个参数作为模块名称，打印时，就会体现相应的信息。
+在 **Controller** 类的构造器中，传入 **logger** ：
 
 ```typescript
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { Logger } from 'nestjs-pino'
 
-async function bootstrap() {
-  const logger = new Logger();
-  const app = await NestFactory.create(AppModule, {
-    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
-  });
-  const port = 3000;
-  logger.log(`The application is running on port: ${port}`);
-  await app.listen(port);
-}
-bootstrap();
-```
-
-如需在 **Controller** 文件中使用 **Logger** 类，在相对应的 **Controller** 类中，声明一个 **logger** 实例即可，之后即可通过该实例进行日志的打印。
-
-```typescript
-import { Controller, Get, Logger } from '@nestjs/common';
-import { User } from './user.entity';
-import { UserService } from './user.service';
-
-@Controller('user')
-export class UserController {
-  private logger = new Logger(UserController.name);
-
-  constructor(private readonly userService: UserService) {
-    this.logger.log('UserController init');
-  }
+@Controller()
+export class AppController {
+  constructor(private readonly logger: Logger) {}
 
   @Get()
-  findAll(): Promise<User[]> {
-    this.logger.log('请求 Users');
-    return this.userService.findAll();
+  getHello() {
+    this.logger.log('something')
+    return `Hello world`
   }
 }
 ```
 
-> [Logger](https://docs.nestjs.com/techniques/logger)
+### 精简打印日志
 
-### 第三方日志模块
+**Pino** 打印的日志较为详细，开发环境中，可以通过 [pino-pretty](https://github.com/pinojs/pino-pretty#readme) 精简。
 
-#### [pino](https://getpino.io/#/)
+配置如下：
 
-#### [winston](https://github.com/winstonjs/winston)
+```typescript
+import { LoggerModule } from 'nestjs-pino'
+
+@Module({
+  imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+          },
+        },
+      },
+    }),
+  ],
+})
+```
+
+> [详细配置](https://github.com/pinojs/pino-pretty#readme)
+
+### 日志保存为文件
+
+通过 [pino-roll](https://github.com/feugy/pino-roll#readme) 可以将通过 **Pino** 生成的日志保存为文件，建议在生成环境中使用。
+
+配置如下：
+
+```typescript
+import { LoggerModule } from 'nestjs-pino'
+
+@Module({
+  imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport: {
+          target: 'pino-roll',
+          options: {
+            file: join('logs', 'log'),
+            frequency: 'daily',
+            size: '10m',
+            mkdir: true,
+          },
+        },
+      },
+    }),
+  ],
+})
+```
+
+- size：单文件大小，文件超出此范围时，将生成新文件。通过单位 **k**，**m**，**g** 代表单位 **KB**，**MB** ，**GB**。
+- frequency：生成的文件的频率，**daily**，**hourly**，代表按日或按小时。
+
