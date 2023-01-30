@@ -16,7 +16,7 @@ import { UserModule } from './user/user.module';
       port: 3306,
       username: 'root',
       password: '123456',
-      database: 'gypsophila',
+      database: 'nestjs',
       entities: [User, Profile, Log, Role],
       synchronize: true,
     }),
