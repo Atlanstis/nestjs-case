@@ -283,7 +283,7 @@ export class UserService {
 
 > 记得将 `UserModule` 在 `AppModule` 中导入。
 
-### CURD 方法
+### 常见 CURD 方法
 
 常见的 **CURD** 方法如下：
 
@@ -292,6 +292,6 @@ export class UserService {
 - **create**：根据参数创建一个对应的实例。
 - **update**：从数据库更新数据。
 - **delete**：从数据库删除数据。
-- save：将数据保存到数据库。
+- **save**：将数据保存到数据库。
 
 > [Repository APIs](https://typeorm.io/repository-api)
