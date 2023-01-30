@@ -1,13 +1,18 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { User } from './user.entity';
 import { UserService } from './user.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  private logger = new Logger(UserController.name);
+
+  constructor(private readonly userService: UserService) {
+    this.logger.log('UserController init');
+  }
 
   @Get()
   findAll(): Promise<User[]> {
+    this.logger.log('请求 Users');
     return this.userService.findAll();
   }
 
