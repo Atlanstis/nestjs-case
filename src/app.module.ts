@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Log } from './log/log.entity';
 import { Profile } from './profile/profile.entity';
@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -22,7 +23,8 @@ import { UserModule } from './user/user.module';
     }),
     UserModule,
   ],
-  providers: [AppService],
+  providers: [AppService, Logger],
+  exports: [Logger],
   controllers: [AppController],
 })
 export class AppModule {}

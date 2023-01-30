@@ -1,77 +1,78 @@
 本文档用于记录 **NestJS** 的日志方案。
 
-### 官方日志模块
+### [winston](https://github.com/winstonjs/winston)
 
-在 `main.ts` 中，创建实例时，可以通过配置 `logger` 的参数，控制 **NestJS** 的日志打印，日志打印在控制台中，可用于开发中的调试。
+可以通过 [nest-winston](https://github.com/gremo/nest-winston#readme) 快速将 **winston** 与 **NestJS** 集成。
 
-```typescript
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+#### 安装
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn'],
-  });
-  await app.listen(3000);
-}
-bootstrap();
+```shell
+$ pnpm i nest-winston winston
 ```
 
-`logger` 可为以下内容，默认为 `true`，开启打印：
+#### 配置
 
-- false：关闭日志打印；
-- ['log', 'error', 'warn', 'debug', 'verbose']：打印不同等级的日志。
-
-#### Logger 类
-
-官方提供的 **@nestjs/common** 包中，提供了一个 **Logger** 类，可以通过这个类在控制台进行相关日志的打印。
-
-**Logger** 类实例化时，可以传递一个参数作为模块名称，打印时，就会体现相应的信息。
+在 **main.ts** 中，创建 **winston** 的日志实例，并通过 **NestJS** 提供的自定义日志方法，进行注册。
 
 ```typescript
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { createLogger, transports, format } from 'winston';
+import { utilities, WinstonModule } from 'nest-winston';
 
 async function bootstrap() {
-  const logger = new Logger();
+  const loggerInts = createLogger({
+    transports: [
+      new transports.Console({
+        format: format.combine(format.timestamp(), utilities.format.nestLike()),
+      }),
+    ],
+  });
   const app = await NestFactory.create(AppModule, {
-    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+    logger: WinstonModule.createLogger({
+      instance: loggerInts,
+    }),
   });
   const port = 3000;
-  logger.log(`The application is running on port: ${port}`);
   await app.listen(port);
 }
 bootstrap();
 ```
 
-如需在 **Controller** 文件中使用 **Logger** 类，在相对应的 **Controller** 类中，声明一个 **logger** 实例即可，之后即可通过该实例进行日志的打印。
+其中 **winston** 的日志实例的具体配置可参考[配置](https://github.com/winstonjs/winston#quick-start)。
+
+之后在 **app.module.ts** 中 `providers` 中传入。
 
 ```typescript
-import { Controller, Get, Logger } from '@nestjs/common';
-import { User } from './user.entity';
-import { UserService } from './user.service';
+import { Global, Logger, Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+@Global()
+@Module({
+  imports: [],
+  providers: [AppService, Logger],
+  exports: [Logger],
+  controllers: [AppController],
+})
+export class AppModule {}
+```
+
+> 其中 `@Global()` 与`exports: [Logger]` 的使用，可以使其它 **Controller** 类构造器中传入对应日志实例。
+
+最后，在需使用的**Controller** 类传入。
+
+```typescript
+import { Controller, Logger } from '@nestjs/common';
 
 @Controller('user')
 export class UserController {
-  private logger = new Logger(UserController.name);
-
-  constructor(private readonly userService: UserService) {
+  constructor(
+    private readonly userService: UserService,
+    private readonly logger: Logger,
+  ) {
     this.logger.log('UserController init');
-  }
-
-  @Get()
-  findAll(): Promise<User[]> {
-    this.logger.log('请求 Users');
-    return this.userService.findAll();
   }
 }
 ```
 
-> [Logger](https://docs.nestjs.com/techniques/logger)
-
-### 第三方日志模块
-
-#### [pino](https://getpino.io/#/)
-
-#### [winston](https://github.com/winstonjs/winston)

@@ -1,14 +1,22 @@
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { createLogger, transports, format } from 'winston';
+import { utilities, WinstonModule } from 'nest-winston';
 
 async function bootstrap() {
-  const logger = new Logger();
+  const loggerInts = createLogger({
+    transports: [
+      new transports.Console({
+        format: format.combine(format.timestamp(), utilities.format.nestLike()),
+      }),
+    ],
+  });
   const app = await NestFactory.create(AppModule, {
-    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+    logger: WinstonModule.createLogger({
+      instance: loggerInts,
+    }),
   });
   const port = 3000;
-  logger.log(`The application is running on port: ${port}`);
   await app.listen(port);
 }
 bootstrap();
